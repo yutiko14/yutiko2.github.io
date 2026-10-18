@@ -12,8 +12,6 @@
   
   #hud { position: fixed; top: 10px; left: 12px; color: #cfe8cf; font-size: 14px; text-shadow: 0 1px 2px #000; pointer-events: none; line-height: 1.5; display: none; z-index: 2; }
   #hud .bonus { color: #ff6b6b; font-weight: bold; display: none; }
-  #hud .ult-ready { color: #ffcc00; font-weight: bold; text-shadow: 0 0 10px #ffcc00; animation: pulse 1s infinite; }
-  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
   
   #boss-hud { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 70%; text-align: center; color: #fff; display: none; z-index: 5; pointer-events: none; }
   #boss-name { font-size: 20px; font-weight: bold; color: #ff3333; text-shadow: 0 0 10px #ff0000; margin-bottom: 5px; letter-spacing: 2px; }
@@ -35,26 +33,20 @@
   /* Мобильное управление */
   #mobile-controls { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3; }
   
-  /* Джойстик движения (слева) */
   #move-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); pointer-events: auto; touch-action: none; }
   #move-stick { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(100, 255, 100, 0.3); border: 2px solid rgba(100, 255, 100, 0.6); }
 
-  /* Джойстик стрельбы (справа) */
   #shoot-zone { position: absolute; bottom: 20px; right: 20px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); pointer-events: auto; touch-action: none; }
   #shoot-stick { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 100, 100, 0.3); border: 2px solid rgba(255, 100, 100, 0.6); }
 
-  /* Кнопка ульты */
   #ult-btn { position: absolute; bottom: 180px; right: 30px; width: 70px; height: 70px; border-radius: 50%; background: rgba(255, 204, 0, 0.2); border: 2px solid #ffcc00; color: #ffcc00; font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; pointer-events: auto; touch-action: none; text-shadow: 0 0 10px #ffcc00; box-shadow: 0 0 15px rgba(255,204,0,0.3); }
   #ult-btn.ready { background: rgba(255, 204, 0, 0.6); animation: pulse 1s infinite; }
   #ult-btn:active { transform: scale(0.95); }
 
-  /* Индикатор заряда ульты */
   #ult-indicator { position: absolute; bottom: 165px; right: 30px; width: 70px; height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; overflow: hidden; pointer-events: none; }
   #ult-fill { height: 100%; width: 0%; background: #ffcc00; transition: width 0.2s; }
 
-  @media (max-width: 600px) {
-    #menu h1 { font-size: 32px; }
-  }
+  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -90,7 +82,6 @@
 
 <div id="levelup-msg">СЛОЖНОСТЬ ПОВЫШЕНА!</div>
 
-<!-- Мобильное управление -->
 <div id="mobile-controls">
   <div id="move-zone"><div id="move-stick"></div></div>
   <div id="shoot-zone"><div id="shoot-stick"></div></div>
@@ -102,14 +93,15 @@
 (() => {
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  let W = canvas.width, H = canvas.height;
+  let W = 960, H = 600;
 
-  // Адаптация под экран телефона
   function resizeCanvas() {
     const wrap = document.getElementById('wrap');
+    if (!wrap) return;
     const ratio = 960 / 600;
     const wrapW = wrap.clientWidth;
     const wrapH = wrap.clientHeight;
+    
     if (wrapW / wrapH > ratio) {
       canvas.height = wrapH;
       canvas.width = wrapH * ratio;
@@ -120,52 +112,39 @@
     W = canvas.width;
     H = canvas.height;
     
-    // Пересчет позиции игрока при ресайзе
-    if (state.player) {
+    if (state && state.player) {
       state.player.x = Math.min(state.player.x, W - 20);
       state.player.y = Math.min(state.player.y, H - 20);
     }
   }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
 
   const ui = {
-    hp: document.getElementById('hp'),
-    maxHp: document.getElementById('maxHp'),
-    kills: document.getElementById('kills'),
-    wave: document.getElementById('wave'),
-    difficulty: document.getElementById('difficulty'),
-    bonusHud: document.getElementById('bonusHud'),
-    bonusTimer: document.getElementById('bonusTimer'),
-    menu: document.getElementById('menu'),
-    gameover: document.getElementById('gameover'),
-    hud: document.getElementById('hud'),
-    playBtn: document.getElementById('playBtn'),
-    restartBtn: document.getElementById('restartBtn'),
-    finalKills: document.getElementById('finalKills'),
-    finalWave: document.getElementById('finalWave'),
-    levelupMsg: document.getElementById('levelup-msg'),
-    bossHud: document.getElementById('boss-hud'),
-    bossName: document.getElementById('boss-name'),
-    bossBarFill: document.getElementById('boss-bar-fill'),
-    mobileControls: document.getElementById('mobile-controls'),
-    ultBtn: document.getElementById('ult-btn'),
+    hp: document.getElementById('hp'), maxHp: document.getElementById('maxHp'),
+    kills: document.getElementById('kills'), wave: document.getElementById('wave'),
+    difficulty: document.getElementById('difficulty'), bonusHud: document.getElementById('bonusHud'),
+    bonusTimer: document.getElementById('bonusTimer'), menu: document.getElementById('menu'),
+    gameover: document.getElementById('gameover'), hud: document.getElementById('hud'),
+    playBtn: document.getElementById('playBtn'), restartBtn: document.getElementById('restartBtn'),
+    finalKills: document.getElementById('finalKills'), finalWave: document.getElementById('finalWave'),
+    levelupMsg: document.getElementById('levelup-msg'), bossHud: document.getElementById('boss-hud'),
+    bossName: document.getElementById('boss-name'), bossBarFill: document.getElementById('boss-bar-fill'),
+    mobileControls: document.getElementById('mobile-controls'), ultBtn: document.getElementById('ult-btn'),
     ultFill: document.getElementById('ult-fill'),
   };
 
   // --- AUDIO ENGINE ---
   const AudioEngine = {
     ctx: null, masterGain: null, musicGain: null, isInitialized: false, musicInterval: null,
-    init() { if (this.isInitialized) return; const AudioContext = window.AudioContext || window.webkitAudioContext; this.ctx = new AudioContext(); this.masterGain = this.ctx.createGain(); this.masterGain.gain.value = 0.5; this.masterGain.connect(this.ctx.destination); this.musicGain = this.ctx.createGain(); this.musicGain.gain.value = 0.15; this.musicGain.connect(this.masterGain); this.isInitialized = true; },
+    init() { if (this.isInitialized) return; const AC = window.AudioContext || window.webkitAudioContext; this.ctx = new AC(); this.masterGain = this.ctx.createGain(); this.masterGain.gain.value = 0.5; this.masterGain.connect(this.ctx.destination); this.musicGain = this.ctx.createGain(); this.musicGain.gain.value = 0.15; this.musicGain.connect(this.masterGain); this.isInitialized = true; },
     playShoot() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const osc=this.ctx.createOscillator(); const gain=this.ctx.createGain(); osc.type='square'; osc.frequency.setValueAtTime(600,t); osc.frequency.exponentialRampToValueAtTime(100,t+0.1); gain.gain.setValueAtTime(0.15,t); gain.gain.exponentialRampToValueAtTime(0.01,t+0.1); osc.connect(gain); gain.connect(this.masterGain); osc.start(t); osc.stop(t+0.1); },
     playHit() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const osc=this.ctx.createOscillator(); const gain=this.ctx.createGain(); osc.type='triangle'; osc.frequency.setValueAtTime(150,t); osc.frequency.exponentialRampToValueAtTime(50,t+0.1); gain.gain.setValueAtTime(0.3,t); gain.gain.exponentialRampToValueAtTime(0.01,t+0.1); osc.connect(gain); gain.connect(this.masterGain); osc.start(t); osc.stop(t+0.1); },
-    playExplosion() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const bufferSize=this.ctx.sampleRate*0.5; const buffer=this.ctx.createBuffer(1,bufferSize,this.ctx.sampleRate); const data=buffer.getChannelData(0); for(let i=0;i<bufferSize;i++)data[i]=Math.random()*2-1; const noise=this.ctx.createBufferSource(); noise.buffer=buffer; const noiseFilter=this.ctx.createBiquadFilter(); noiseFilter.type='lowpass'; noiseFilter.frequency.setValueAtTime(1000,t); noiseFilter.frequency.exponentialRampToValueAtTime(100,t+0.4); const noiseGain=this.ctx.createGain(); noiseGain.gain.setValueAtTime(0.4,t); noiseGain.gain.exponentialRampToValueAtTime(0.01,t+0.4); noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(this.masterGain); const osc=this.ctx.createOscillator(); const oscGain=this.ctx.createGain(); osc.type='sine'; osc.frequency.setValueAtTime(80,t); osc.frequency.exponentialRampToValueAtTime(20,t+0.5); oscGain.gain.setValueAtTime(0.5,t); oscGain.gain.exponentialRampToValueAtTime(0.01,t+0.5); osc.connect(oscGain); oscGain.connect(this.masterGain); noise.start(t); osc.start(t); osc.stop(t+0.5); },
+    playExplosion() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const bS=this.ctx.sampleRate*0.5; const buf=this.ctx.createBuffer(1,bS,this.ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<bS;i++)d[i]=Math.random()*2-1; const n=this.ctx.createBufferSource(); n.buffer=buf; const f=this.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.setValueAtTime(1000,t); f.frequency.exponentialRampToValueAtTime(100,t+0.4); const g=this.ctx.createGain(); g.gain.setValueAtTime(0.4,t); g.gain.exponentialRampToValueAtTime(0.01,t+0.4); n.connect(f); f.connect(g); g.connect(this.masterGain); const o=this.ctx.createOscillator(); const og=this.ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(80,t); o.frequency.exponentialRampToValueAtTime(20,t+0.5); og.gain.setValueAtTime(0.5,t); og.gain.exponentialRampToValueAtTime(0.01,t+0.5); o.connect(og); og.connect(this.masterGain); n.start(t); o.start(t); o.stop(t+0.5); },
     playZombieDeath() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const osc=this.ctx.createOscillator(); const gain=this.ctx.createGain(); osc.type='sawtooth'; osc.frequency.setValueAtTime(100,t); osc.frequency.exponentialRampToValueAtTime(30,t+0.15); gain.gain.setValueAtTime(0.1,t); gain.gain.exponentialRampToValueAtTime(0.01,t+0.15); osc.connect(gain); gain.connect(this.masterGain); osc.start(t); osc.stop(t+0.15); },
     playFrenzy() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const osc=this.ctx.createOscillator(); const gain=this.ctx.createGain(); osc.type='sawtooth'; osc.frequency.setValueAtTime(200,t); osc.frequency.linearRampToValueAtTime(800,t+0.3); gain.gain.setValueAtTime(0.2,t); gain.gain.exponentialRampToValueAtTime(0.01,t+0.3); osc.connect(gain); gain.connect(this.masterGain); osc.start(t); osc.stop(t+0.3); },
     playLevelUp() { if(!this.isInitialized)return; const t=this.ctx.currentTime; [400,600,800].forEach((f,i)=>{const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type='square';osc.frequency.setValueAtTime(f,t+i*0.1);gain.gain.setValueAtTime(0.15,t+i*0.1);gain.gain.exponentialRampToValueAtTime(0.01,t+i*0.1+0.1);osc.connect(gain);gain.connect(this.masterGain);osc.start(t+i*0.1);osc.stop(t+i*0.1+0.1);}); },
     playMedkit() { if(!this.isInitialized)return; const t=this.ctx.currentTime; [500,700,1000].forEach((f,i)=>{const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(f,t+i*0.08);gain.gain.setValueAtTime(0.2,t+i*0.08);gain.gain.exponentialRampToValueAtTime(0.01,t+i*0.08+0.15);osc.connect(gain);gain.connect(this.masterGain);osc.start(t+i*0.08);osc.stop(t+i*0.08+0.15);}); },
     playPerk() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const osc=this.ctx.createOscillator(); const gain=this.ctx.createGain(); osc.type='triangle'; osc.frequency.setValueAtTime(300,t); osc.frequency.exponentialRampToValueAtTime(900,t+0.2); gain.gain.setValueAtTime(0.2,t); gain.gain.exponentialRampToValueAtTime(0.01,t+0.2); osc.connect(gain); gain.connect(this.masterGain); osc.start(t); osc.stop(t+0.2); },
-    playLightning() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const bufferSize=this.ctx.sampleRate*0.3; const buffer=this.ctx.createBuffer(1,bufferSize,this.ctx.sampleRate); const data=buffer.getChannelData(0); for(let i=0;i<bufferSize;i++)data[i]=Math.random()*2-1; const noise=this.ctx.createBufferSource(); noise.buffer=buffer; const filter=this.ctx.createBiquadFilter(); filter.type='highpass'; filter.frequency.value=1000; const gain=this.ctx.createGain(); gain.gain.setValueAtTime(0.3,t); gain.gain.exponentialRampToValueAtTime(0.01,t+0.3); noise.connect(filter); filter.connect(gain); gain.connect(this.masterGain); noise.start(t); },
+    playLightning() { if(!this.isInitialized)return; const t=this.ctx.currentTime; const bS=this.ctx.sampleRate*0.3; const buf=this.ctx.createBuffer(1,bS,this.ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<bS;i++)d[i]=Math.random()*2-1; const n=this.ctx.createBufferSource(); n.buffer=buf; const f=this.ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=1000; const g=this.ctx.createGain(); g.gain.setValueAtTime(0.3,t); g.gain.exponentialRampToValueAtTime(0.01,t+0.3); n.connect(f); f.connect(g); g.connect(this.masterGain); n.start(t); },
     playUlt() { if(!this.isInitialized)return; const t=this.ctx.currentTime; [200,400,600,1000].forEach((f,i)=>{const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type='sawtooth';osc.frequency.setValueAtTime(f,t+i*0.05);gain.gain.setValueAtTime(0.2,t+i*0.05);gain.gain.exponentialRampToValueAtTime(0.01,t+i*0.05+0.2);osc.connect(gain);gain.connect(this.masterGain);osc.start(t+i*0.05);osc.stop(t+i*0.05+0.2);}); },
     startMusic() { if(!this.isInitialized)return; this.stopMusic(); this.musicInterval=setInterval(()=>{if(!this.ctx||this.ctx.state==='suspended')return;const t=this.ctx.currentTime;const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type='triangle';const notes=[55,55,65,55];const note=notes[Math.floor(t*2)%notes.length];osc.frequency.setValueAtTime(note,t);gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(0.2,t+0.05);gain.gain.exponentialRampToValueAtTime(0.01,t+0.4);osc.connect(gain);gain.connect(this.musicGain);osc.start(t);osc.stop(t+0.4);},500); },
     stopMusic() { if(this.musicInterval){clearInterval(this.musicInterval);this.musicInterval=null;} },
@@ -179,23 +158,18 @@
     kills: 0, wave: 1, difficulty: 1,
     waveTimer: 0, spawnTimer: 0,
     itemTimer: 2, medkitTimer: 5, perkTimer: 5,
-    player: { x: 0, y: 0, r: 14, speed: 250 },
+    player: { x: 480, y: 300, r: 14, speed: 250 },
     zombies: [], miniBosses: [], boss: null,
     bullets: [], enemyBullets: [], particles: [],
     items: [], medkits: [], perks: [], lightningStrikes: [],
-    keys: {}, mouse: { x: 0, y: 0, down: false },
+    keys: {}, mouse: { x: 480, y: 300, down: false },
     lastShot: 0, shootCooldown: 140, baseCooldown: 140, bonusCooldown: 70,
     frenzyTime: 0, frenzyActive: false,
     buffs: { speed: 0, armor: 0, damage: 0, firerate: 0 },
     screenFlash: 0, cameraShake: 0, t: 0,
     nextBonusKill: 20, nextDiffKill: 150,
     
-    // УЛЬТА
-    ultCharge: 0,
-    ultMax: 67,
-    ultActive: false,
-    ultTimer: 0,
-    ultSpikeTimer: 0,
+    ultCharge: 0, ultMax: 67, ultActive: false, ultTimer: 0, ultSpikeTimer: 0,
   };
 
   // Мобильное управление
@@ -206,11 +180,10 @@
   const ultBtn = document.getElementById('ult-btn');
   const ultFill = document.getElementById('ult-fill');
 
-  let moveTouchId = null;
-  let shootTouchId = null;
-  let moveCenter = { x: 0, y: 0 };
-  let shootCenter = { x: 0, y: 0 };
+  let moveTouchId = null, shootTouchId = null;
+  let moveCenter = { x: 0, y: 0 }, shootCenter = { x: 0, y: 0 };
 
+  // ТАЧ-СОБЫТИЯ ДЛЯ ДВИЖЕНИЯ
   moveZone.addEventListener('touchstart', e => {
     e.preventDefault();
     const touch = e.changedTouches[0];
@@ -223,9 +196,7 @@
   moveZone.addEventListener('touchmove', e => {
     e.preventDefault();
     for (let touch of e.changedTouches) {
-      if (touch.identifier === moveTouchId) {
-        updateMoveStick(touch.clientX, touch.clientY);
-      }
+      if (touch.identifier === moveTouchId) updateMoveStick(touch.clientX, touch.clientY);
     }
   }, { passive: false });
 
@@ -234,33 +205,22 @@
       if (touch.identifier === moveTouchId) {
         moveTouchId = null;
         moveStick.style.transform = 'translate(-50%, -50%)';
-        state.keys = {}; // Сброс движения
+        state.keys = {};
       }
     }
   });
 
   function updateMoveStick(touchX, touchY) {
-    const dx = touchX - moveCenter.x;
-    const dy = touchY - moveCenter.y;
-    const dist = Math.hypot(dx, dy);
-    const maxDist = 50;
-    
+    const dx = touchX - moveCenter.x, dy = touchY - moveCenter.y;
+    const dist = Math.hypot(dx, dy), maxDist = 50;
     let stickX = dx, stickY = dy;
-    if (dist > maxDist) {
-      stickX = (dx / dist) * maxDist;
-      stickY = (dy / dist) * maxDist;
-    }
-    
+    if (dist > maxDist) { stickX = (dx / dist) * maxDist; stickY = (dy / dist) * maxDist; }
     moveStick.style.transform = `translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
-    
-    // Преобразуем в нажатия клавиш
-    state.keys['KeyW'] = stickY < -15;
-    state.keys['KeyS'] = stickY > 15;
-    state.keys['KeyA'] = stickX < -15;
-    state.keys['KeyD'] = stickX > 15;
+    state.keys['KeyW'] = stickY < -15; state.keys['KeyS'] = stickY > 15;
+    state.keys['KeyA'] = stickX < -15; state.keys['KeyD'] = stickX > 15;
   }
 
-  // Стрельба
+  // ТАЧ-СОБЫТИЯ ДЛЯ СТРЕЛЬБЫ
   shootZone.addEventListener('touchstart', e => {
     e.preventDefault();
     const touch = e.changedTouches[0];
@@ -274,9 +234,7 @@
   shootZone.addEventListener('touchmove', e => {
     e.preventDefault();
     for (let touch of e.changedTouches) {
-      if (touch.identifier === shootTouchId) {
-        updateShootStick(touch.clientX, touch.clientY);
-      }
+      if (touch.identifier === shootTouchId) updateShootStick(touch.clientX, touch.clientY);
     }
   }, { passive: false });
 
@@ -291,20 +249,11 @@
   });
 
   function updateShootStick(touchX, touchY) {
-    const dx = touchX - shootCenter.x;
-    const dy = touchY - shootCenter.y;
-    const dist = Math.hypot(dx, dy);
-    const maxDist = 50;
-    
+    const dx = touchX - shootCenter.x, dy = touchY - shootCenter.y;
+    const dist = Math.hypot(dx, dy), maxDist = 50;
     let stickX = dx, stickY = dy;
-    if (dist > maxDist) {
-      stickX = (dx / dist) * maxDist;
-      stickY = (dy / dist) * maxDist;
-    }
-    
+    if (dist > maxDist) { stickX = (dx / dist) * maxDist; stickY = (dy / dist) * maxDist; }
     shootStick.style.transform = `translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
-    
-    // Направление стрельбы
     if (dist > 10) {
       const angle = Math.atan2(dy, dx);
       const p = state.player;
@@ -313,18 +262,19 @@
     }
   }
 
-  // Кнопка ульты
+  // КНОПКА УЛЬТЫ
   ultBtn.addEventListener('touchstart', e => {
     e.preventDefault();
-    if (state.ultCharge >= state.ultMax && !state.ultActive) {
-      activateUlt();
-    }
+    if (state.ultCharge >= state.ultMax && !state.ultActive) activateUlt();
   }, { passive: false });
 
+  // ЗАПУСК ИГРЫ (ИСПРАВЛЕННЫЙ)
   function startGame() {
-    AudioEngine.init(); AudioEngine.resume(); AudioEngine.startMusic();
+    resizeCanvas(); // Сначала подгоняем экран
     
-    resizeCanvas();
+    AudioEngine.init(); 
+    AudioEngine.resume(); 
+    AudioEngine.startMusic();
     
     state.running = true; state.over = false;
     state.hp = 100; state.maxHp = 100; state.regen = 0.1;
@@ -334,27 +284,37 @@
     state.zombies = []; state.miniBosses = []; state.boss = null;
     state.bullets = []; state.enemyBullets = []; state.particles = [];
     state.items = []; state.medkits = []; state.perks = []; state.lightningStrikes = [];
+    
     state.player.x = W/2; state.player.y = H/2;
+    state.mouse.x = W/2; state.mouse.y = H/2;
+    
     state.lastShot = 0; state.shootCooldown = state.baseCooldown;
     state.frenzyTime = 0; state.frenzyActive = false;
     state.buffs = { speed: 0, armor: 0, damage: 0, firerate: 0 };
     state.screenFlash = 0; state.cameraShake = 0;
     state.nextBonusKill = 20; state.nextDiffKill = 150;
-    state.keys = {};
-    state.mouse.down = false;
+    state.keys = {}; state.mouse.down = false;
     
-    state.ultCharge = 0;
-    state.ultActive = false;
-    state.ultTimer = 0;
-    state.ultSpikeTimer = 0;
+    state.ultCharge = 0; state.ultActive = false; state.ultTimer = 0; state.ultSpikeTimer = 0;
 
     ui.menu.classList.add('hidden'); ui.gameover.classList.add('hidden');
     ui.hud.style.display = 'block'; ui.bonusHud.style.display = 'none';
-    ui.bossHud.style.display = 'none';
-    ui.levelupMsg.style.opacity = 0;
+    ui.bossHud.style.display = 'none'; ui.levelupMsg.style.opacity = 0;
     ui.mobileControls.style.display = 'block';
     syncHud();
   }
+
+  // Используем touchstart для мобилок и click для ПК
+  ui.playBtn.addEventListener('touchstart', e => { e.preventDefault(); startGame(); }, { passive: false });
+  ui.playBtn.addEventListener('click', startGame);
+  
+  ui.restartBtn.addEventListener('touchstart', e => { e.preventDefault(); startGame(); }, { passive: false });
+  ui.restartBtn.addEventListener('click', startGame);
+
+  // ... ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ...
+  // (syncHud, spawnZombie, spawnMiniBoss, spawnBoss, spawnItem, spawnMedkit, spawnPerk,
+  //  explodeItem, checkProgress, activateFrenzy, activateUlt, increaseDifficulty,
+  //  shoot, update, gameOver, draw, loop)
 
   function syncHud() {
     ui.hp.textContent = Math.max(0, Math.round(state.hp));
@@ -363,16 +323,12 @@
     ui.wave.textContent = state.wave;
     ui.difficulty.textContent = state.difficulty;
     
-    // Обновление мобильной кнопки ульты
     if (state.ultCharge >= state.ultMax && !state.ultActive) {
-      ui.ultBtn.classList.add('ready');
-      ui.ultBtn.textContent = 'GO';
+      ui.ultBtn.classList.add('ready'); ui.ultBtn.textContent = 'GO';
     } else if (state.ultActive) {
-      ui.ultBtn.classList.remove('ready');
-      ui.ultBtn.textContent = 'ON';
+      ui.ultBtn.classList.remove('ready'); ui.ultBtn.textContent = 'ON';
     } else {
-      ui.ultBtn.classList.remove('ready');
-      ui.ultBtn.textContent = '3';
+      ui.ultBtn.classList.remove('ready'); ui.ultBtn.textContent = '3';
     }
     const percent = Math.min(100, (state.ultCharge / state.ultMax) * 100);
     ui.ultFill.style.width = percent + '%';
@@ -385,23 +341,16 @@
     }
   }
 
-  // --- Input (клавиатура для тестов на ПК) ---
   window.addEventListener('keydown', e => {
     const code = e.code;
     state.keys[code] = true;
     if (code === 'KeyR' && state.running) startGame();
     if ((code === 'Digit3' || code === 'Numpad3') && state.running && !state.over) {
-      if (state.ultCharge >= state.ultMax && !state.ultActive) {
-        activateUlt();
-      }
+      if (state.ultCharge >= state.ultMax && !state.ultActive) activateUlt();
     }
   });
   window.addEventListener('keyup', e => { state.keys[e.code] = false; });
 
-  ui.playBtn.addEventListener('click', startGame);
-  ui.restartBtn.addEventListener('click', startGame);
-
-  // --- ИГРОВЫЕ ФУНКЦИИ ---
   function spawnZombie() {
     const side = Math.floor(Math.random() * 4);
     let x, y;
@@ -517,12 +466,8 @@
   function activateUlt() {
     if (state.ultCharge < state.ultMax || state.ultActive) return;
     AudioEngine.playUlt();
-    state.ultActive = true;
-    state.ultTimer = 3.0;
-    state.ultSpikeTimer = 0;
-    state.ultCharge = 0;
-    state.screenFlash = 1.5;
-    state.cameraShake = 2;
+    state.ultActive = true; state.ultTimer = 3.0; state.ultSpikeTimer = 0;
+    state.ultCharge = 0; state.screenFlash = 1.5; state.cameraShake = 2;
     syncHud();
   }
 
@@ -559,27 +504,15 @@
     state.t += dt;
 
     if (state.ultActive) {
-      state.ultTimer -= dt;
-      state.ultSpikeTimer -= dt;
-      
+      state.ultTimer -= dt; state.ultSpikeTimer -= dt;
       if (state.ultSpikeTimer <= 0) {
-        state.ultSpikeTimer = 1.0;
-        AudioEngine.playFrenzy();
-        
+        state.ultSpikeTimer = 1.0; AudioEngine.playFrenzy();
         for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
-          state.bullets.push({
-            x: state.player.x, y: state.player.y,
-            vx: Math.cos(angle) * 600, vy: Math.sin(angle) * 600,
-            r: 4, life: 0.8, dmg: 30,
-            isSpike: true
-          });
+          state.bullets.push({ x: state.player.x, y: state.player.y, vx: Math.cos(angle) * 600, vy: Math.sin(angle) * 600, r: 4, life: 0.8, dmg: 30, isSpike: true });
         }
         state.cameraShake = Math.max(state.cameraShake, 0.5);
       }
-
-      if (state.ultTimer <= 0) {
-        state.ultActive = false;
-      }
+      if (state.ultTimer <= 0) state.ultActive = false;
     }
     
     if (state.hp < state.maxHp) {
@@ -612,35 +545,21 @@
 
     if (state.mouse.down) shoot();
 
-    for (let i = state.bullets.length - 1; i >= 0; i--) { 
-      const b = state.bullets[i]; 
-      b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; 
-      if (b.life <= 0 || b.x < -20 || b.x > W + 20 || b.y < -20 || b.y > H + 20) state.bullets.splice(i, 1); 
-    }
+    for (let i = state.bullets.length - 1; i >= 0; i--) { const b = state.bullets[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0 || b.x < -20 || b.x > W + 20 || b.y < -20 || b.y > H + 20) state.bullets.splice(i, 1); }
     for (let i = state.enemyBullets.length - 1; i >= 0; i--) { 
       const eb = state.enemyBullets[i]; eb.x += eb.vx * dt; eb.y += eb.vy * dt; eb.life -= dt; 
       if (Math.hypot(p.x - eb.x, p.y - eb.y) < p.r + eb.r) { 
-        if (state.ultActive) {
-          state.enemyBullets.splice(i, 1);
-          continue;
-        }
+        if (state.ultActive) { state.enemyBullets.splice(i, 1); continue; }
         let fd = eb.dmg; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd; state.screenFlash = Math.max(state.screenFlash, 0.5); AudioEngine.playHit(); state.enemyBullets.splice(i, 1); if (state.hp <= 0) { state.hp = 0; gameOver(); } continue; 
       } 
       if (eb.life <= 0 || eb.x < -20 || eb.x > W + 20 || eb.y < -20 || eb.y > H + 20) state.enemyBullets.splice(i, 1); 
     }
 
-    // Зомби
     for (let i = state.zombies.length - 1; i >= 0; i--) {
       const z = state.zombies[i]; const dx = p.x - z.x, dy = p.y - z.y; const d = Math.hypot(dx, dy) || 1;
       z.x += (dx/d) * z.speed * dt; z.y += (dy/d) * z.speed * dt; z.hitFlash = Math.max(0, z.hitFlash - dt * 4);
       if (d < z.r + p.r) { 
-        if (state.ultActive) {
-           state.kills++; state.ultCharge++;
-           state.zombies.splice(i, 1);
-           AudioEngine.playZombieDeath();
-           checkProgress();
-           continue;
-        }
+        if (state.ultActive) { state.kills++; state.ultCharge++; state.zombies.splice(i, 1); AudioEngine.playZombieDeath(); checkProgress(); continue; }
         let fd = z.dmg; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd * dt * 0.9; if (state.hp <= 0) { state.hp = 0; gameOver(); } 
       }
       for (let j = state.bullets.length - 1; j >= 0; j--) {
@@ -653,18 +572,11 @@
       }
     }
 
-    // Мини-боссы
     for (let i = state.miniBosses.length - 1; i >= 0; i--) {
       const mb = state.miniBosses[i]; const dx = p.x - mb.x, dy = p.y - mb.y; const d = Math.hypot(dx, dy) || 1;
       mb.x += (dx/d) * mb.speed * dt; mb.y += (dy/d) * mb.speed * dt; mb.hitFlash = Math.max(0, mb.hitFlash - dt * 4);
       if (d < mb.r + p.r) { 
-        if (state.ultActive) {
-           state.kills += 5; state.ultCharge += 5;
-           state.miniBosses.splice(i, 1);
-           AudioEngine.playExplosion();
-           checkProgress();
-           continue;
-        }
+        if (state.ultActive) { state.kills += 5; state.ultCharge += 5; state.miniBosses.splice(i, 1); AudioEngine.playExplosion(); checkProgress(); continue; }
         let fd = mb.dmg; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd * dt * 0.9; if (state.hp <= 0) { state.hp = 0; gameOver(); } 
       }
       for (let j = state.bullets.length - 1; j >= 0; j--) {
@@ -677,58 +589,35 @@
       }
     }
 
-    // Главный Босс
     if (state.boss) {
       const b = state.boss; const dx = p.x - b.x, dy = p.y - b.y; const d = Math.hypot(dx, dy) || 1;
       if (b.type === 'FRICH') {
         if (d > 100) { b.x += (dx/d) * b.speed * dt; b.y += (dy/d) * b.speed * dt; }
         b.hitFlash = Math.max(0, b.hitFlash - dt * 4); b.attackTimer -= dt;
         if (b.attackTimer <= 0) { b.attackTimer = 2.5; AudioEngine.playLightning(); for (let k = 0; k < 3; k++) { state.lightningStrikes.push({ x: p.x + (Math.random() - 0.5) * 300, y: p.y + (Math.random() - 0.5) * 300, timer: 1.0, maxTimer: 1.0, struck: false }); } }
-        if (d < b.r + p.r) { 
-          if (!state.ultActive) {
-            let fd = b.dmg; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd * dt; if (state.hp <= 0) { state.hp = 0; gameOver(); } 
-          }
-        }
+        if (d < b.r + p.r) { if (!state.ultActive) { let fd = b.dmg; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd * dt; if (state.hp <= 0) { state.hp = 0; gameOver(); } } }
       } else if (b.type === 'YUTIKO') {
         b.attackTimer -= dt; b.dashTimer -= dt;
         if (d > 300) { b.x += (dx/d) * b.speed * dt; b.y += (dy/d) * b.speed * dt; }
         else if (d < 200) { b.x -= (dx/d) * b.speed * 0.5 * dt; b.y -= (dy/d) * b.speed * 0.5 * dt; }
         if (b.dashTimer <= 0) { b.dashTimer = 4; b.x += (dx/d) * 150; b.y += (dy/d) * 150; b.x = Math.max(b.r, Math.min(W - b.r, b.x)); b.y = Math.max(b.r, Math.min(H - b.r, b.y)); AudioEngine.playFrenzy(); }
-        if (b.attackTimer <= 0) { b.attackTimer = 0.8; AudioEngine.playBossShoot(); const angle = Math.atan2(dy, dx); state.enemyBullets.push({ x: b.x, y: b.y, vx: Math.cos(angle) * 400, vy: Math.sin(angle) * 400, r: 5, life: 2.0, dmg: b.dmg }); }
-        if (d < b.r + p.r) { 
-          if (!state.ultActive) {
-            let fd = b.dmg; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd * dt; if (state.hp <= 0) { state.hp = 0; gameOver(); } 
-          }
-        }
+        if (b.attackTimer <= 0) { b.attackTimer = 0.8; AudioEngine.playShoot(); const angle = Math.atan2(dy, dx); state.enemyBullets.push({ x: b.x, y: b.y, vx: Math.cos(angle) * 400, vy: Math.sin(angle) * 400, r: 5, life: 2.0, dmg: b.dmg }); }
+        if (d < b.r + p.r) { if (!state.ultActive) { let fd = b.dmg; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd * dt; if (state.hp <= 0) { state.hp = 0; gameOver(); } } }
       }
       for (let j = state.bullets.length - 1; j >= 0; j--) {
         const blt = state.bullets[j];
         if (Math.hypot(blt.x - b.x, blt.y - b.y) < b.r + blt.r) {
           b.hp -= blt.dmg; b.hitFlash = 1; state.bullets.splice(j, 1); ui.bossBarFill.style.width = Math.max(0, (b.hp / b.maxHp) * 100) + '%';
           if (b.hp <= 0) { 
-            const bossType = b.type;
-            state.boss = null; 
-            ui.bossHud.style.display = 'none'; 
-            AudioEngine.playExplosion(); 
-            state.screenFlash = 1.5; 
-            state.cameraShake = 3; 
-            state.kills += 15; 
-            state.ultCharge += 15;
-            
-            if (bossType === 'FRICH') {
-              state.maxHp += 50;
-              state.hp = state.maxHp;
-            } else if (bossType === 'YUTIKO') {
-              state.maxHp += 100;
-              state.hp = state.maxHp;
-            }
+            const bossType = b.type; state.boss = null; ui.bossHud.style.display = 'none'; AudioEngine.playExplosion(); state.screenFlash = 1.5; state.cameraShake = 3; state.kills += 15; state.ultCharge += 15;
+            if (bossType === 'FRICH') { state.maxHp += 50; state.hp = state.maxHp; }
+            else if (bossType === 'YUTIKO') { state.maxHp += 100; state.hp = state.maxHp; }
             syncHud();
           }
         }
       }
     }
 
-    // Молнии
     for (let i = state.lightningStrikes.length - 1; i >= 0; i--) {
       const ls = state.lightningStrikes[i]; ls.timer -= dt;
       if (ls.timer <= 0 && !ls.struck) { ls.struck = true; AudioEngine.playExplosion(); if (Math.hypot(p.x - ls.x, p.y - ls.y) < 60) { if (!state.ultActive) { let fd = 35; if (state.buffs.armor > 0) fd *= 0.5; state.hp -= fd; state.screenFlash = 1; state.cameraShake = 2; if (state.hp <= 0) { state.hp = 0; gameOver(); } } } }
@@ -750,21 +639,9 @@
     }
 
     const diff = state.difficulty;
-    state.itemTimer -= dt; 
-    if (state.itemTimer <= 0 && state.items.length < 10) { 
-      spawnItem(); 
-      state.itemTimer = Math.max(0.8, 3 - diff * 0.2); 
-    }
-    state.medkitTimer -= dt; 
-    if (state.medkitTimer <= 0 && state.medkits.length < 8) { 
-      spawnMedkit(); 
-      state.medkitTimer = Math.max(2, 8 - diff * 0.5); 
-    }
-    state.perkTimer -= dt; 
-    if (state.perkTimer <= 0 && state.perks.length < 6) { 
-      spawnPerk(); 
-      state.perkTimer = Math.max(3, 10 - diff * 0.6); 
-    }
+    state.itemTimer -= dt; if (state.itemTimer <= 0 && state.items.length < 10) { spawnItem(); state.itemTimer = Math.max(0.8, 3 - diff * 0.2); }
+    state.medkitTimer -= dt; if (state.medkitTimer <= 0 && state.medkits.length < 8) { spawnMedkit(); state.medkitTimer = Math.max(2, 8 - diff * 0.5); }
+    state.perkTimer -= dt; if (state.perkTimer <= 0 && state.perks.length < 6) { spawnPerk(); state.perkTimer = Math.max(3, 10 - diff * 0.6); }
 
     syncHud();
   }
@@ -793,10 +670,7 @@
     ctx.fillStyle = grad2;
     ctx.fillRect(0, 0, W, H);
     
-    if (state.ultActive) {
-       ctx.fillStyle = 'rgba(255, 215, 0, 0.1)';
-       ctx.fillRect(0, 0, W, H);
-    }
+    if (state.ultActive) { ctx.fillStyle = 'rgba(255, 215, 0, 0.1)'; ctx.fillRect(0, 0, W, H); }
 
     ctx.strokeStyle = `hsla(${180 + Math.sin(time)*60}, 50%, 50%, 0.1)`;
     ctx.lineWidth = 1;
@@ -814,12 +688,10 @@
       const pulse = 1 + Math.sin(item.pulse) * 0.2; 
       if (item.isMega) {
         ctx.fillStyle = '#ff0000'; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 15;
-        ctx.beginPath(); ctx.arc(item.x, item.y, item.r * 1.2 * pulse, 0, Math.PI*2); ctx.fill(); 
-        ctx.shadowBlur = 0; ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 3; ctx.stroke(); 
+        ctx.beginPath(); ctx.arc(item.x, item.y, item.r * 1.2 * pulse, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 3; ctx.stroke(); 
         ctx.fillStyle = '#ffff00'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!!', item.x, item.y);
       } else {
-        ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(item.x, item.y, item.r * pulse, 0, Math.PI*2); ctx.fill(); 
-        ctx.strokeStyle = '#ff5c5c'; ctx.lineWidth = 2; ctx.stroke(); 
+        ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(item.x, item.y, item.r * pulse, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#ff5c5c'; ctx.lineWidth = 2; ctx.stroke(); 
         ctx.fillStyle = '#ff5c5c'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', item.x, item.y); 
       }
     }
@@ -833,26 +705,16 @@
     }
 
     for (const b of state.bullets) { 
-      if (b.isSpike) {
-        ctx.fillStyle = '#ffcc00'; 
-        ctx.shadowColor = '#ffcc00'; 
-        ctx.shadowBlur = 10;
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); 
-        ctx.shadowBlur = 0;
-      } else {
-        ctx.fillStyle = state.frenzyActive ? '#ffaa00' : '#ffe066'; 
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); 
-      }
+      if (b.isSpike) { ctx.fillStyle = '#ffcc00'; ctx.shadowColor = '#ffcc00'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; }
+      else { ctx.fillStyle = state.frenzyActive ? '#ffaa00' : '#ffe066'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); }
     }
     for (const eb of state.enemyBullets) { ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(eb.x, eb.y, eb.r, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; }
 
     for (const z of state.zombies) { ctx.fillStyle = z.hitFlash > 0 ? '#ffffff' : '#5cbf5c'; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#2a5a2a'; ctx.lineWidth = 2; ctx.stroke(); const w = z.r * 2; const hpFrac = z.hp / z.maxHp; ctx.fillStyle = '#3a0f0f'; ctx.fillRect(z.x - z.r, z.y - z.r - 8, w, 4); ctx.fillStyle = '#ff5c5c'; ctx.fillRect(z.x - z.r, z.y - z.r - 8, w * hpFrac, 4); }
 
     for (const mb of state.miniBosses) {
-      ctx.fillStyle = mb.hitFlash > 0 ? '#ffffff' : '#a020f0';
-      ctx.shadowColor = '#d946ef'; ctx.shadowBlur = 15;
-      ctx.beginPath(); ctx.arc(mb.x, mb.y, mb.r, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-      ctx.strokeStyle = '#d946ef'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = mb.hitFlash > 0 ? '#ffffff' : '#a020f0'; ctx.shadowColor = '#d946ef'; ctx.shadowBlur = 15;
+      ctx.beginPath(); ctx.arc(mb.x, mb.y, mb.r, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = '#d946ef'; ctx.lineWidth = 3; ctx.stroke();
       const w = mb.r * 2; const hpFrac = mb.hp / mb.maxHp;
       ctx.fillStyle = '#3a0f0f'; ctx.fillRect(mb.x - mb.r, mb.y - mb.r - 8, w, 4);
       ctx.fillStyle = '#d946ef'; ctx.fillRect(mb.x - mb.r, mb.y - mb.r - 8, w * hpFrac, 4);
@@ -885,14 +747,13 @@
     if (state.buffs.armor > 0) { ctx.strokeStyle = 'rgba(100, 200, 255, 0.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 5, 0, Math.PI*2); ctx.stroke(); }
     if (state.buffs.speed > 0) { ctx.strokeStyle = 'rgba(100, 255, 100, 0.5)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 8, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
 
-    // Отрисовка прицела для мобилки (по направлению стика)
-    const dx = state.mouse.x - p.x, dy = state.mouse.y - p.y;
-    const len = Math.hypot(dx, dy) || 1;
-    ctx.strokeStyle = state.frenzyActive ? '#ffcc00' : '#bfe3ff'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + dx/len * (p.r + 10), p.y + dy/len * (p.r + 10)); ctx.stroke();
-
-    // Круг прицела на мобилке не нужен, но для ПК оставим
+    // Прицел (на телефоне не рисуем, чтобы не мешал)
     if (!('ontouchstart' in window)) {
+      const dx = state.mouse.x - p.x, dy = state.mouse.y - p.y;
+      const len = Math.hypot(dx, dy) || 1;
+      ctx.strokeStyle = state.frenzyActive ? '#ffcc00' : '#bfe3ff'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + dx/len * (p.r + 10), p.y + dy/len * (p.r + 10)); ctx.stroke();
+      
       ctx.strokeStyle = state.frenzyActive ? 'rgba(255,100,100,.8)' : 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(state.mouse.x, state.mouse.y, 7, 0, Math.PI*2); ctx.moveTo(state.mouse.x - 12, state.mouse.y); ctx.lineTo(state.mouse.x + 12, state.mouse.y); ctx.moveTo(state.mouse.x, state.mouse.y - 12); ctx.lineTo(state.mouse.x, state.mouse.y + 12); ctx.stroke();
     }
@@ -902,9 +763,7 @@
     ctx.fillStyle = state.hp > 30 ? '#4ade80' : '#f87171'; ctx.fillRect(bx, by, barW * (state.hp / state.maxHp), barH);
     ctx.strokeStyle = '#2a3a2a'; ctx.strokeRect(bx, by, barW, barH);
     
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fff'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
     ctx.fillText(`HP: ${Math.round(state.hp)}/${Math.round(state.maxHp)}`, bx + 5, by - 5);
 
     ctx.restore();
@@ -919,6 +778,9 @@
     draw();
     requestAnimationFrame(loop);
   }
+  
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
   requestAnimationFrame(loop);
   draw();
 })();
